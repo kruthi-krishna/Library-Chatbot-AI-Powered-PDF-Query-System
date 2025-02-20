@@ -100,9 +100,9 @@ python app.py
 ```
 
 ## Future Enhancements
-- ** Enhanced Chat UI**: Develop a frontend for real-time chatbot interactions.
-- ** Metadata Extraction**: Display author, title, and other document details.
-- ** Cloud Storage Integration**: Enable PDF uploads via a web interface.
+- Enhanced Chat UI: Develop a frontend for real-time chatbot interactions.
+- Metadata Extraction: Display author, title, and other document details.
+- Cloud Storage Integration: Enable PDF uploads via a web interface.
 
 ## Contributing
 Feel free to fork this repository and submit pull requests! 
