@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; }
+        #chatbox { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; }
+        #userInput { width: 80%; padding: 10px; }
+        button { padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Library Chatbot</h2>
+    <div id="chatbox"></div>
+    <input type="text" id="userInput" placeholder="Type a command...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        // Replace with your real API Key
+        const API_KEY = "YOUR API KEY"
+        function appendMessage(sender, text) {
+            let chatbox = document.getElementById("chatbox");
+            let message = document.createElement("p");
+            message.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatbox.appendChild(message);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            let input = document.getElementById("userInput").value.trim().toLowerCase();
+            appendMessage("You", input);
+            document.getElementById("userInput").value = "";
+
+            let responseText = "I didn't understand that.";
+            let headers = { "Content-Type": "application/json", "API-KEY": API_KEY };
+
+            try {
+                // List PDFs
+                if (input === "list pdfs") {
+                    let res = await fetch("http://127.0.0.1:5000/list_pdfs", { headers });
+                    let data = await res.json();
+
+                    // FIX: Check if data.pdfs exists and is an array
+                    if (data && data.pdfs && Array.isArray(data.pdfs)) {
+                        responseText = data.pdfs.length > 0 ? data.pdfs.join(", ") : "No PDFs found.";
+                    } else {
+                        responseText = "Error retrieving PDFs.";
+                    }
+                } 
+                // Extract text from a page
+                else if (input.startsWith("show page")) {
+                    let parts = input.split(" ");
+                    let page = parseInt(parts[2]);
+                    let pdfName = parts.slice(4).join(" ");
+
+                    let res = await fetch("http://127.0.0.1:5000/extract", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ pdf_name: pdfName, page_number: page })
+                    });
+                    let data = await res.json();
+                    responseText = data.text || "Could not extract text.";
+                }
+                // Summarize a page
+                else if (input.startsWith("summarize page")) {
+                    let parts = input.split(" ");
+                    let page = parseInt(parts[2]);
+                    let pdfName = parts.slice(4).join(" ");
+
+                    let extractRes = await fetch("http://127.0.0.1:5000/extract", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ pdf_name: pdfName, page_number: page })
+                    });
+                    let extractData = await extractRes.json();
+
+                    if (extractData.text) {
+                        let summarizeRes = await fetch("http://127.0.0.1:5000/summarize", {
+                            method: "POST",
+                            headers,
+                            body: JSON.stringify({ text: extractData.text })
+                        });
+                        let summaryData = await summarizeRes.json();
+                        responseText = summaryData.summary || "Could not summarize.";
+                    } else {
+                        responseText = "Could not extract text for summarization.";
+                    }
+                }
+                // Get Word Meaning
+                else if (input.startsWith("word meaning")) {
+                    let word = input.split(" ").slice(2).join(" ");
+                    let res = await fetch("http://127.0.0.1:5000/meaning", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({ word })
+                    });
+                    let data = await res.json();
+                    responseText = data.meaning || "Word not found.";
+                }
+            } catch (error) {
+                responseText = "An error occurred while processing your request.";
+                console.error("Error:", error);
+            }
+
+            appendMessage("Bot", responseText);
+        }
+    </script>
+</body>
+</html>
